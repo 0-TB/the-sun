@@ -1,65 +1,140 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import type { DestinationCard } from "@/lib/types";
+import { CardA } from "@/components/cards/CardA";
+import { CardB } from "@/components/cards/CardB";
+import { CardC } from "@/components/cards/CardC";
+
+const VARIANTS = [
+  {
+    id: "A",
+    name: "The Cover",
+    tagline: "Editorial. Image-led. Sparse typography over full-bleed photography.",
+  },
+  {
+    id: "B",
+    name: "The Broadsheet",
+    tagline: "Structured. Split layout. Dark panel surfaces cost and hierarchy.",
+  },
+  {
+    id: "C",
+    name: "The Postcard",
+    tagline: "Warm. Tactile. Layered prints on a cream card — made to be kept.",
+  },
+];
 
 export default function Home() {
+  const [card, setCard] = useState<DestinationCard | null>(null);
+
+  useEffect(() => {
+    fetch("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    })
+      .then((r) => r.json())
+      .then((data) => setCard(data.destinations[0]));
+  }, []);
+
+  if (!card) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#080808" }}
+      >
+        <div
+          className="text-white/15 text-[10px] tracking-[0.4em] uppercase"
+          style={{ fontFamily: "var(--font-syne)" }}
+        >
+          Loading
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main
+      className="min-h-screen px-6 py-14 md:px-12 lg:px-16"
+      style={{ background: "#080808" }}
+    >
+      {/* Header */}
+      <div className="mb-14 max-w-6xl mx-auto">
+        <div
+          className="text-white/15 text-[9px] tracking-[0.5em] uppercase mb-4"
+          style={{ fontFamily: "var(--font-syne)" }}
+        >
+          Step 3 · Design Exploration
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <h1
+          className="text-white mb-2"
+          style={{
+            fontFamily: "var(--font-cormorant)",
+            fontSize: "clamp(36px, 5vw, 52px)",
+            fontWeight: 300,
+            fontStyle: "italic",
+            lineHeight: 1,
+          }}
+        >
+          Helios
+        </h1>
+        <p
+          className="text-white/25 text-[12px]"
+          style={{ fontFamily: "var(--font-syne)" }}
+        >
+          Three card directions · all showing Lisbon · pick one to build with
+        </p>
+      </div>
+
+      {/* 3-column variant grid */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 items-start">
+        {VARIANTS.map(({ id, name, tagline }, i) => (
+          <div key={id} className="flex flex-col gap-5">
+            {/* Variant label */}
+            <div className="flex items-start gap-3">
+              <span
+                className="text-white/8 font-bold leading-none"
+                style={{
+                  fontFamily: "var(--font-syne)",
+                  fontSize: "clamp(52px, 5vw, 64px)",
+                  lineHeight: 0.9,
+                }}
+              >
+                {id}
+              </span>
+              <div className="pt-1">
+                <div
+                  className="text-white/60 text-[13px] font-semibold leading-none mb-1"
+                  style={{ fontFamily: "var(--font-syne)" }}
+                >
+                  {name}
+                </div>
+                <div
+                  className="text-white/22 text-[10px] leading-snug max-w-[180px]"
+                  style={{ fontFamily: "var(--font-syne)" }}
+                >
+                  {tagline}
+                </div>
+              </div>
+            </div>
+
+            {/* Card variant */}
+            {i === 0 && <CardA card={card} />}
+            {i === 1 && <CardB card={card} />}
+            {i === 2 && <CardC card={card} />}
+          </div>
+        ))}
+      </div>
+
+      {/* Footer note */}
+      <div className="max-w-6xl mx-auto mt-16">
+        <div
+          className="text-white/12 text-[9px] tracking-[0.35em] uppercase"
+          style={{ fontFamily: "var(--font-syne)" }}
+        >
+          Once a direction is chosen · all three destinations will be rendered
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
