@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude session workspace (ephemeral task/lesson files)
+/claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
