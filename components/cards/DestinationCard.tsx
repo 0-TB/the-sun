@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { DestinationCard as DestinationCardType } from "@/lib/types";
 import { WeatherIcon } from "./WeatherIcon";
 
@@ -6,99 +10,116 @@ interface Props {
   onClick?: () => void;
 }
 
-// The locked direction — A×C Hybrid
-// A's dark full-bleed photography + C's polaroid collage overlays
-// Flight timeline replaces highlight bullets · Cormorant italic headline · Syne body
+// The locked direction — A×C Hybrid, v2
+// Fade carousel replaces polaroid cluster · Prominent weather badge · Refined cost typography
 export function DestinationCard({ card, onClick }: Props) {
   const { outbound } = card.flightInfo;
 
+  // All images for this destination: hero first, then collage
+  const images = [card.images.hero, ...card.images.collage].filter(Boolean);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const advance = useCallback(() => {
+    setCurrentIndex((i) => (i + 1) % images.length);
+  }, [images.length]);
+
+  // Auto-cycle every 8 seconds, with a random initial offset so multiple
+  // cards on screen don't all transition at the same moment.
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const offset = Math.random() * 8000;
+    let interval: ReturnType<typeof setInterval>;
+    const timeout = setTimeout(() => {
+      advance();
+      interval = setInterval(advance, 8000);
+    }, offset);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [advance, images.length]);
+
   return (
     <div
-      className="relative overflow-hidden rounded-2xl cursor-pointer group select-none"
+      className="relative overflow-hidden rounded-2xl cursor-pointer select-none group"
       style={{ aspectRatio: "3 / 4" }}
       onClick={onClick}
     >
-      {/* Hero image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={card.images.hero}
-        alt={card.destination.city}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
+      {/* ── Carousel — full-bleed crossfade ──────────────────────────────── */}
+      <AnimatePresence mode="sync">
+        <motion.img
+          key={currentIndex}
+          src={images[currentIndex]}
+          alt={card.destination.city}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.9, ease: "easeInOut" }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </AnimatePresence>
 
-      {/* Gradient — heavy bottom, whisper top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 via-55% to-black/15" />
+      {/* Hover scale wrapper — inside overflow:hidden so card shape is preserved */}
+      <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
 
-      {/* Polaroid collage — upper-right, partially off-edge */}
-      <div className="absolute" style={{ top: "10%", right: "-6%", width: "52%" }}>
-        {/* Back photo — tilted left */}
-        {card.images.collage[1] && (
-          <div
-            className="absolute overflow-hidden"
-            style={{
-              top: "28px",
-              left: "8px",
-              width: "70%",
-              aspectRatio: "1",
-              border: "6px solid white",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
-              transform: "rotate(-7deg)",
-              borderRadius: "1px",
-              zIndex: 1,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={card.images.collage[1]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        {/* Front photo — tilted right, overlapping */}
-        {card.images.collage[0] && (
-          <div
-            className="absolute overflow-hidden"
-            style={{
-              top: 0,
-              right: "8px",
-              width: "76%",
-              aspectRatio: "1",
-              border: "7px solid white",
-              boxShadow: "0 10px 36px rgba(0,0,0,0.50)",
-              transform: "rotate(5deg)",
-              borderRadius: "1px",
-              zIndex: 2,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={card.images.collage[0]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        {/* Spacer so the div has height */}
-        <div style={{ paddingTop: "110%" }} />
-      </div>
-
-      {/* Cost pill — top-left, dark backdrop always legible */}
-      <div className="absolute top-5 left-5">
+      {/* ── Tap-to-advance zone — upper 58% ──────────────────────────────── */}
+      {/* Stops propagation so clicking image advances carousel, not opens modal */}
+      {images.length > 1 && (
         <div
-          className="flex items-baseline gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 border border-white/10"
-        >
+          className="absolute inset-x-0 top-0 z-20"
+          style={{ height: "58%" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            advance();
+          }}
+        />
+      )}
+
+      {/* ── Gradient — heavy bottom, whisper top ─────────────────────────── */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 via-55% to-black/15 pointer-events-none" />
+
+      {/* ── Dot indicators — top centre ──────────────────────────────────── */}
+      {images.length > 1 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 pointer-events-none">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-500"
+              style={{
+                width: i === currentIndex ? "14px" : "5px",
+                height: "5px",
+                background:
+                  i === currentIndex
+                    ? "rgba(255,255,255,0.80)"
+                    : "rgba(255,255,255,0.28)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Cost pill — top-left ─────────────────────────────────────────── */}
+      {/* z-30 so it sits above tap zone; stopPropagation so it doesn't open modal */}
+      <div
+        className="absolute top-5 left-5 z-30"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-baseline gap-1 bg-black/55 backdrop-blur-md rounded-full px-3.5 py-2 border border-white/10">
           <span
             className="text-white/35 text-[8px] tracking-[0.18em] uppercase"
             style={{ fontFamily: "var(--font-syne)" }}
           >
             from
           </span>
+          {/* Cormorant italic for the price — matches city name, feels editorial not price-tag */}
           <span
-            className="text-white text-[18px] font-bold leading-none"
+            className="text-white leading-none"
             style={{
-              fontFamily: "var(--font-syne)",
-              letterSpacing: "-0.025em",
+              fontFamily: "var(--font-cormorant)",
+              fontSize: "21px",
+              fontWeight: 400,
+              fontStyle: "italic",
+              letterSpacing: "-0.01em",
             }}
           >
             £{card.cost.total}
@@ -106,8 +127,45 @@ export function DestinationCard({ card, onClick }: Props) {
         </div>
       </div>
 
-      {/* Bottom text zone */}
-      <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
+      {/* ── Weather badge — top-right ────────────────────────────────────── */}
+      {/* Elevated from footnote to at-a-glance feature */}
+      <div
+        className="absolute top-5 right-5 z-30"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col items-center gap-1 bg-black/55 backdrop-blur-md rounded-xl px-3 py-2.5 border border-white/10">
+          <WeatherIcon
+            icon={card.weather.icon}
+            size={22}
+            color="rgba(255,255,255,0.88)"
+          />
+          <span
+            className="text-white/90 leading-none"
+            style={{
+              fontFamily: "var(--font-syne)",
+              fontSize: "17px",
+              fontWeight: 300,
+            }}
+          >
+            {card.weather.avgTempC}°
+          </span>
+          <span
+            className="text-white/32 text-center leading-tight"
+            style={{
+              fontFamily: "var(--font-syne)",
+              fontSize: "6.5px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              maxWidth: "52px",
+            }}
+          >
+            {card.weather.summary}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Bottom text zone — click here opens modal ────────────────────── */}
+      <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 z-30">
         {/* Country */}
         <p
           className="text-white/30 text-[9px] tracking-[0.32em] uppercase mb-0.5"
@@ -176,28 +234,12 @@ export function DestinationCard({ card, onClick }: Props) {
             >
               {outbound.departureTime}
             </span>
-            <div className="flex items-center gap-1.5">
-              <span
-                className="text-white/22 text-[9px] tracking-[0.06em]"
-                style={{ fontFamily: "var(--font-syne)" }}
-              >
-                {outbound.duration}
-              </span>
-              <span className="text-white/15 text-[8px]">·</span>
-              <div className="flex items-center gap-1">
-                <WeatherIcon
-                  icon={card.weather.icon}
-                  size={11}
-                  color="rgba(255,255,255,0.28)"
-                />
-                <span
-                  className="text-white/22 text-[9px]"
-                  style={{ fontFamily: "var(--font-syne)" }}
-                >
-                  {card.weather.avgTempC}°
-                </span>
-              </div>
-            </div>
+            <span
+              className="text-white/22 text-[9px] tracking-[0.06em]"
+              style={{ fontFamily: "var(--font-syne)" }}
+            >
+              {outbound.duration}
+            </span>
             <span
               className="text-white/38 text-[10px]"
               style={{ fontFamily: "var(--font-syne)" }}
