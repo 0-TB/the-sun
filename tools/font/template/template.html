@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Helios Handwriting Template</title>
+  <style>
+    /* ── Screen preview ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    .print-instructions {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      max-width: 210mm;
+      width: 100%;
+      line-height: 1.6;
+    }
+    .print-instructions strong { color: #ffd700; }
+    .print-instructions code { background: #333; padding: 1px 5px; border-radius: 3px; }
+
+    .sheet-wrapper {
+      background: white;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    }
+
+    /* ── A4 page ── */
+    .sheet {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      overflow: hidden;
+      padding: 15mm;
+    }
+
+    /* ── Registration markers (4 corners, inside padding) ── */
+    .reg {
+      position: absolute;
+      width: 12mm;
+      height: 12mm;
+      background: #000;
+    }
+    .reg-tl { top: 1.5mm;  left: 1.5mm;  }
+    .reg-tr { top: 1.5mm;  right: 1.5mm; }
+    .reg-bl { bottom: 1.5mm; left: 1.5mm;  }
+    .reg-br { bottom: 1.5mm; right: 1.5mm; }
+
+    /* ── Page header ── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 3mm;
+      font-size: 7pt;
+      color: #888;
+      letter-spacing: 0.05em;
+    }
+    .page-header strong { color: #333; font-size: 9pt; }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      width: 100%;
+      height: calc(297mm - 30mm - 10mm); /* page - margins - header */
+      gap: 0;
+    }
+
+    /* ── Cell ── */
+    .cell {
+      position: relative;
+      border: 0.3pt solid #ccc;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .writing-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Cap-height guide — dashed */
+    .line-cap {
+      position: absolute;
+      left: 0; right: 0;
+      top: 22%;
+      border-top: 0.5pt dashed #b0c4de;
+    }
+
+    /* x-height guide — dashed */
+    .line-x {
+      position: absolute;
+      left: 0; right: 0;
+      top: 42%;
+      border-top: 0.5pt dashed #b0c4de;
+    }
+
+    /* Baseline — solid */
+    .line-base {
+      position: absolute;
+      left: 0; right: 0;
+      top: 72%;
+      border-top: 1pt solid #8899aa;
+    }
+
+    /* Descender zone — very faint */
+    .line-desc {
+      position: absolute;
+      left: 0; right: 0;
+      bottom: 3%;
+      border-top: 0.3pt dotted #ddd;
+    }
+
+    /* Character label */
+    .char-label {
+      text-align: center;
+      font-size: 5.5pt;
+      color: #aaa;
+      padding: 0.5mm 0 0.8mm;
+      font-family: 'Courier New', monospace;
+      line-height: 1;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    /* Spare cells are dimmed */
+    .cell.spare {
+      background: #f8f8f8;
+    }
+    .cell.spare .char-label {
+      color: #ddd;
+    }
+    .cell.spare .line-cap,
+    .cell.spare .line-x,
+    .cell.spare .line-base,
+    .cell.spare .line-desc {
+      opacity: 0.3;
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        background: white;
+        padding: 0;
+        display: block;
+      }
+
+      .print-instructions {
+        display: none;
+      }
+
+      .sheet-wrapper {
+        box-shadow: none;
+      }
+
+      .sheet {
+        width: 210mm;
+        height: 297mm;
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-instructions">
+    <strong>PRINT INSTRUCTIONS</strong><br>
+    File > Print &nbsp;|&nbsp; Paper: <code>A4</code> &nbsp;|&nbsp; Scale: <code>100%</code> (never "fit to page") &nbsp;|&nbsp;
+    Margins: <code>None</code> &nbsp;|&nbsp; Background graphics: <strong>ON</strong><br>
+    Write with a <strong>0.5–0.7 mm fineliner or gel pen</strong>. Fill each cell cleanly within the cap-height line.
+    Photograph flat on a desk in good daylight — no flash. See <code>template-guide.md</code> for full tips.
+  </div>
+
+  <div class="sheet-wrapper">
+    <div class="sheet">
+
+      <!-- Registration markers -->
+      <div class="reg reg-tl"></div>
+      <div class="reg reg-tr"></div>
+      <div class="reg reg-bl"></div>
+      <div class="reg reg-br"></div>
+
+      <!-- Page header -->
+      <div class="page-header">
+        <strong>HELIOS HANDWRITING</strong> &nbsp;·&nbsp; Sheet 1 of 1 &nbsp;·&nbsp;
+        Write each character once per cell &nbsp;·&nbsp; Stay above the baseline
+      </div>
+
+      <!-- Character grid (generated by JS below) -->
+      <div class="grid" id="grid"></div>
+
+    </div>
+  </div>
+
+  <script>
+    // Character map matching config.py
+    const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const DIGITS    = '0123456789'.split('');
+    const PUNCT     = ['.', ',', ';', ':', '!', '?', "'", '"', '(', ')', '-', '/', '&', '@', '#', '%', '+', '=', '£', '$'];
+
+    const chars = [...LOWERCASE, ...UPPERCASE, ...DIGITS, ...PUNCT];
+
+    // Pad to 90 cells
+    while (chars.length < 90) chars.push('');
+
+    const grid = document.getElementById('grid');
+
+    chars.forEach((ch, i) => {
+      const isSpare = ch === '';
+      const displayLabel = isSpare ? '—' : (ch === '"' ? '&quot;' : (ch === '&' ? '&amp;' : ch));
+      const screenLabel  = isSpare ? '—' : ch;
+
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (isSpare ? ' spare' : '');
+      cell.innerHTML = `
+        <div class="writing-area">
+          <div class="line-cap"></div>
+          <div class="line-x"></div>
+          <div class="line-base"></div>
+          <div class="line-desc"></div>
+        </div>
+        <div class="char-label">${displayLabel}</div>
+      `;
+      grid.appendChild(cell);
+    });
+  </script>
+
+</body>
+</html>
